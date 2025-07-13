@@ -18,6 +18,8 @@ package com.ayuget.redface.data.api.model;
 
 import android.content.Context;
 
+import androidx.annotation.NonNull;
+
 import com.ayuget.redface.R;
 
 public enum TopicFilter {
@@ -26,6 +28,7 @@ public enum TopicFilter {
     PARTICIPATED,
     READ;
 
+    @NonNull
     public String resolve(Context context) {
         if (this == NONE) {
             return context.getResources().getString(R.string.action_topics_filter_all);

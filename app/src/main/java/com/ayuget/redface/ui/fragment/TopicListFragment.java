@@ -69,6 +69,7 @@ import timber.log.Timber;
 @FragmentWithArgs
 public class TopicListFragment extends ToggleToolbarFragment implements TopicsAdapter.OnTopicClickedListener {
 	private static final String ARG_LAST_LOADED_PAGE = "last_loaded_page";
+	private static final String ARG_TOPIC_FILTER = "topic_filter";
 
 	/**
 	 * Interface definition for a callback to be invoked when a topic in this fragment has
@@ -133,6 +134,13 @@ public class TopicListFragment extends ToggleToolbarFragment implements TopicsAd
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
+		// Restore the list of topics when the fragment is recreated by the framework
+		if (savedInstanceState != null) {
+			lastLoadedPage = savedInstanceState.getInt(ARG_LAST_LOADED_PAGE, 0);
+			topicFilter = (TopicFilter) savedInstanceState.get(ARG_TOPIC_FILTER);
+			savedInstanceState.clear();
+		}
+
 		if (topicFilter == null) {
 			topicFilter = TopicFilter.NONE;
 		}
@@ -192,11 +200,6 @@ public class TopicListFragment extends ToggleToolbarFragment implements TopicsAd
 	public void onActivityCreated(@Nullable Bundle savedInstanceState) {
 		super.onActivityCreated(savedInstanceState);
 
-		// Restore the list of topics when the fragment is recreated by the framework
-		if (savedInstanceState != null) {
-			lastLoadedPage = savedInstanceState.getInt(ARG_LAST_LOADED_PAGE, 0);
-			savedInstanceState.clear();
-		}
 	}
 
 	@Override
@@ -209,7 +212,7 @@ public class TopicListFragment extends ToggleToolbarFragment implements TopicsAd
 			refreshTopicList();
 		});
 
-		if (displayedTopics == null || displayedTopics.size() == 0 || settings.refreshTopicList()) {
+		if (displayedTopics == null || displayedTopics.isEmpty() || settings.refreshTopicList()) {
 			displayedTopics = new ArrayList<>();
 			loadTopics();
 		} else {
@@ -299,6 +302,7 @@ public class TopicListFragment extends ToggleToolbarFragment implements TopicsAd
 	public void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(outState);
 		outState.putInt(ARG_LAST_LOADED_PAGE, lastLoadedPage);
+		outState.putSerializable(ARG_TOPIC_FILTER, topicFilter);
 	}
 
 	@Override
@@ -379,7 +383,7 @@ public class TopicListFragment extends ToggleToolbarFragment implements TopicsAd
 			public void onError(Throwable throwable) {
 				Timber.e(throwable, "Error loading first page for category '%s', subcategory '%s'", category.name(), subcategory);
 
-				if (displayedTopics.size() == 0) {
+				if (displayedTopics.isEmpty()) {
 					dataPresenter.showErrorView();
 				} else {
 					SnackbarHelper.make(TopicListFragment.this, R.string.error_loading_topics).show();
