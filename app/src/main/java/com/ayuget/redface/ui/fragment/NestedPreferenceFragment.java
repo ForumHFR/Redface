@@ -296,7 +296,7 @@ public class NestedPreferenceFragment extends PreferenceFragment implements Shar
             if (arePrivateMessagesEnabled) {
                 RedfaceNotifications.updateOrLaunchPrivateMessagesWorker(getActivity(), appSettings.getPrivateMessagesPollingFrequency());
             } else {
-                RedfaceNotifications.disablePrivateMessagesNotifications(getActivity());
+                RedfaceNotifications.disablePrivateMessagesNotifications();
             }
         }
 
