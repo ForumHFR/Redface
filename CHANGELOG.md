@@ -8,6 +8,7 @@
   * Ask permission when entering the private message section.
   * Ask permission when entering the general preferences.
 * fix #230: page not loading because of '$' signs.
+* fix #232: user profiles in private messages.
 
 ## v1.0.1
 
