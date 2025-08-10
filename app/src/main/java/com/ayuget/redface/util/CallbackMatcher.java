@@ -41,7 +41,8 @@ public class CallbackMatcher {
 
         while (matcher.find()) {
             final MatchResult matchResult = matcher.toMatchResult();
-            final String replacement = callback.foundMatch(matchResult);
+            // Call quoteReplacement to deal with '$' in the input.
+            final String replacement = Matcher.quoteReplacement(callback.foundMatch(matchResult));
             matcher.appendReplacement(output, replacement);
         }
 

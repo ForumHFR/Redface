@@ -7,6 +7,7 @@
 * Re-enable private messages notifications:
   * Ask permission when entering the private message section.
   * Ask permission when entering the general preferences.
+* fix #230: page not loading because of '$' signs.
 
 ## v1.0.1
 
