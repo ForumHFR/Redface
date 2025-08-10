@@ -56,13 +56,13 @@ public class RedfaceNotifications {
                 );
     }
 
-    public static void disablePrivateMessagesNotifications(Context context) {
-        WorkManager.getInstance(context)
+    public static void disablePrivateMessagesNotifications() {
+        WorkManager.getInstance()
                 .cancelAllWorkByTag(RedfaceNotifications.PRIVATE_MESSAGES_GROUP);
     }
 
     public static void updateOrLaunchPrivateMessagesWorker(Context context, int frequencyInMinutes) {
-        disablePrivateMessagesNotifications(context);
+        disablePrivateMessagesNotifications();
         launchPrivateMessagesWorker(context, frequencyInMinutes);
     }
 

@@ -16,10 +16,13 @@
 
 package com.ayuget.redface.ui.activity;
 
+import android.Manifest;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AlertDialog;
+import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.ayuget.redface.R;
@@ -42,6 +45,7 @@ import com.ayuget.redface.ui.misc.PagePosition;
 import com.ayuget.redface.ui.misc.SnackbarHelper;
 import com.ayuget.redface.util.GoToPageDialog;
 import com.squareup.otto.Subscribe;
+import com.tbruyelle.rxpermissions.RxPermissions;
 
 import javax.inject.Inject;
 
@@ -77,6 +81,18 @@ public class PrivateMessagesActivity extends MultiPaneActivity implements Privat
                 loadPrivateMessage(privateMessage, privateMessage.getPagesCount(), PagePosition.bottom());
             }
         }
+        if (Build.VERSION.SDK_INT >= 33) {
+            RxPermissions.getInstance(this)
+                    .request(Manifest.permission.POST_NOTIFICATIONS)
+                    .subscribe(isPermissionGranted -> {
+                        if (!isPermissionGranted) {
+                            Timber.w("POST_NOTIFICATIONS denied, won't setup notifications");
+                            return;
+                        }
+                        // Do nothing as the worker is started at the launch of the app
+                    });
+        }
+
     }
 
     @Override
@@ -109,8 +125,7 @@ public class PrivateMessagesActivity extends MultiPaneActivity implements Privat
                     .replace(R.id.container, pmListFragment, DEFAULT_FRAGMENT_TAG)
                     .replace(R.id.details_container, detailsDefaultFragment, DETAILS_DEFAULT_FRAGMENT_TAG)
                     .commit();
-        }
-        else {
+        } else {
             getSupportFragmentManager().beginTransaction()
                     .replace(R.id.container, pmListFragment, DEFAULT_FRAGMENT_TAG)
                     .commit();
@@ -124,6 +139,11 @@ public class PrivateMessagesActivity extends MultiPaneActivity implements Privat
         PrivateMessageListFragment pmListFragment = (PrivateMessageListFragment) getSupportFragmentManager().findFragmentByTag(PM_LIST_FRAGMENT_TAG);
         if (pmListFragment != null) {
             pmListFragment.setOnPrivateMessageClickedListener(this);
+        } else {
+            Fragment defaultFragment = getSupportFragmentManager().findFragmentByTag(DEFAULT_FRAGMENT_TAG);
+            if (defaultFragment instanceof PrivateMessageListFragment) {
+                ((PrivateMessageListFragment) defaultFragment).setOnPrivateMessageClickedListener(this);
+            }
         }
     }
 
@@ -135,8 +155,7 @@ public class PrivateMessagesActivity extends MultiPaneActivity implements Privat
         if (privateMessage.hasUnreadMessages()) {
             pageToLoad = privateMessage.getPagesCount();
             pagePosition = new PagePosition(PagePosition.BOTTOM);
-        }
-        else {
+        } else {
             pageToLoad = 1;
             pagePosition = new PagePosition(PagePosition.BOTTOM);
         }
@@ -201,7 +220,8 @@ public class PrivateMessagesActivity extends MultiPaneActivity implements Privat
      * fixme: Code is duplicated with TopicsActivity because Otto doesn't support settings @Subscribe annotations
      * on base classes (pull request #135 still not merged)
      */
-    @Subscribe public void onEditPost(final EditPostEvent event) {
+    @Subscribe
+    public void onEditPost(final EditPostEvent event) {
         subscribe(quoteHandler.load(event.getTopic(), mdService.getPostContent(userManager.getActiveUser(), event.getTopic(), event.getPostId()), new EndlessObserver<String>() {
             @Override
             public void onNext(String messageBBCode) {
@@ -214,7 +234,8 @@ public class PrivateMessagesActivity extends MultiPaneActivity implements Privat
      * fixme: Code is duplicated with TopicsActivity because Otto doesn't support settings @Subscribe annotations
      * on base classes (pull request #135 still not merged)
      */
-    @Subscribe public void onPostActionEvent(final PostActionEvent event) {
+    @Subscribe
+    public void onPostActionEvent(final PostActionEvent event) {
         switch (event.getPostAction()) {
             case DELETE:
                 Timber.d("About to delete post");

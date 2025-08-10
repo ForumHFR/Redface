@@ -18,13 +18,16 @@ package com.ayuget.redface.ui.misc;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.Build;
+import android.os.Environment;
 import android.os.Handler;
-import android.view.View;
+import android.provider.MediaStore;
 
+import androidx.annotation.RequiresApi;
 import androidx.core.app.ActivityOptionsCompat;
 import androidx.core.app.ShareCompat;
 
@@ -34,189 +37,180 @@ import com.ayuget.redface.storage.StorageHelper;
 import com.ayuget.redface.ui.UIConstants;
 import com.ayuget.redface.ui.activity.BaseActivity;
 import com.ayuget.redface.ui.activity.ExifDetailsActivity;
-import com.ayuget.redface.util.ImageUtils;
-import com.google.android.material.snackbar.Snackbar;
 import com.tbruyelle.rxpermissions.RxPermissions;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-import rx.functions.Action1;
 import timber.log.Timber;
 
+import static com.ayuget.redface.util.ImageUtils.isScopedStorageEnabled;
+
 public class ImageMenuHandler {
-	public static final String PNG_FILE_EXTENSION = ".png";
-	private final Activity activity;
+    private final Activity activity;
 
-	private final String imageUrl;
+    private final String imageUrl;
 
-	public interface ImageSavedCallback {
-		void onImageSaved(File savedImage, Bitmap.CompressFormat format);
-	}
+    public interface ImageSavedCallback {
+        void onImageSaved(Uri savedImage, String mimeType);
+    }
 
-	public ImageMenuHandler(Activity activity, String imageUrl) {
-		this.activity = activity;
-		this.imageUrl = imageUrl;
-	}
+    public ImageMenuHandler(Activity activity, String imageUrl) {
+        this.activity = activity;
+        this.imageUrl = imageUrl;
+    }
 
-	public void saveImage(boolean compressAsPng) {
-		saveImage(compressAsPng, true, true, true, null);
-	}
+    public void saveImage() {
+        saveImage(true, false, null);
+    }
 
-	public void saveImage(final boolean compressAsPng, final boolean notifyUser, final boolean broadcastSave, final boolean overrideExisting, final ImageSavedCallback imageSavedCallback) {
-		RxPermissions.getInstance(activity)
-				.request(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-				.subscribe(new Action1<Boolean>() {
-					@Override
-					public void call(Boolean granted) {
-						if (granted) {
-							String imageOriginalName = StorageHelper.getFilenameFromUrl(imageUrl);
-							final Bitmap.CompressFormat targetFormat = compressAsPng ? Bitmap.CompressFormat.PNG : Bitmap.CompressFormat.JPEG;
+    public void saveTemporaryImage(final ImageSavedCallback imageSavedCallback) {
+        saveImage(false, true, imageSavedCallback);
+    }
 
-							// When compressing image as PNG, we need to make sure the file extension is ".png"
-							final String imageName = compressAsPng ? ImageUtils.replaceExtensionWithPng(imageOriginalName) : imageOriginalName;
+    private void saveImage(final boolean notifyUser, final boolean isTemporary, final ImageSavedCallback imageSavedCallback) {
+        if (isScopedStorageEnabled()) {
+            Timber.d("Scoped storage is enabled, no need to ask any permission");
+            saveImageFromNetwork(notifyUser, isTemporary, imageSavedCallback);
+        } else {
+            RxPermissions.getInstance(activity)
+                    .request(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    .subscribe(isPermissionGranted -> {
+                        if (!isPermissionGranted) {
+                            Timber.w("WRITE_EXTERNAL_STORAGE denied, unable to save image");
+                            SnackbarHelper.makeError(activity, R.string.error_saving_image_permission_denied).show();
+                            return;
+                        }
 
-							// Images can be already stored locally so they are only downloaded from the network
-							// if necessary.
-							try {
-								final File mediaFile = StorageHelper.getMediaFile(imageName);
+                        saveImageFromNetwork(notifyUser, isTemporary, imageSavedCallback);
+                    });
+        }
+    }
 
-								if (mediaFile.exists() && !overrideExisting) {
-									Timber.d("Image '%s' already exists, it will not be redownloaded for efficiency reasons", mediaFile.getAbsolutePath());
-									notifyImageWasSaved(imageSavedCallback, mediaFile, targetFormat);
-								} else {
-									saveImageFromNetwork(mediaFile, targetFormat, compressAsPng, notifyUser, broadcastSave, imageSavedCallback);
-								}
-							} catch (IOException e) {
-								Timber.e(e, "Unable to save image to external storage");
-								SnackbarHelper.makeError(activity, R.string.error_saving_image).show();
-							}
-						} else {
-							Timber.w("WRITE_EXTERNAL_STORAGE denied, unable to save image");
-							SnackbarHelper.makeError(activity, R.string.error_saving_image_permission_denied).show();
-						}
-					}
-				});
-	}
+    private void saveImageFromNetwork(final boolean notifyUser, final boolean isTemporary, final ImageSavedCallback imageSavedCallback) {
+        OkHttpClient okHttpClient = SecureHttpClientFactory.newBuilder().build();
 
-	/**
-	 * Saves image from network using OkHttp. Glide is not used because it would strip away the
-	 * EXIF data once the image is saved (Glide directly gives us a Bitmap).
-	 */
-	private void saveImageFromNetwork(final File mediaFile, final Bitmap.CompressFormat targetFormat, final boolean compressAsPng, final boolean notifyUser, final boolean broadcastSave, final ImageSavedCallback imageSavedCallback) {
-		OkHttpClient okHttpClient = SecureHttpClientFactory.newBuilder().build();
+        final Request request = new Request.Builder()
+                .url(imageUrl)
+                .build();
 
-		final Request request = new Request.Builder().url(imageUrl).build();
-		okHttpClient.newCall(request).enqueue(new Callback() {
-			@Override
-			public void onFailure(Call call, IOException e) {
-				SnackbarHelper.makeError(activity, R.string.error_saving_image).show();
-			}
+        String imageFilename = StorageHelper.getFilenameFromUrl(imageUrl);
 
-			@Override
-			public void onResponse(Call call, Response response) throws IOException {
-				final byte[] imageBytes = response.body().bytes();
+        okHttpClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                SnackbarHelper.makeError(activity, R.string.error_saving_image).show();
+            }
 
-				Timber.d("Image successfully decoded, requesting WRITE_EXTERNAL_STORAGE permission to save image");
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                final byte[] imageBytes = response.body().bytes();
+                final String imageMimeType = response.header("Content-Type");
 
-				RxPermissions.getInstance(activity)
-						.request(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-						.subscribe(new Action1<Boolean>() {
-							@Override
-							public void call(Boolean granted) {
-								if (granted) {
-									Timber.d("WRITE_EXTERNAL_STORAGE granted, saving image to disk");
+                Timber.d("Image successfully downloaded (size: %d bytes)", imageBytes.length);
 
-									try {
-										Timber.d("Saving image to %s", mediaFile.getAbsolutePath());
+                try {
+                    Uri savedImageUri;
 
-										if (compressAsPng) {
-											Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
-											StorageHelper.storeImageToFile(bitmap, mediaFile, targetFormat);
-										} else {
-											StorageHelper.storeImageToFile(imageBytes, mediaFile);
-										}
+                    if (isTemporary) {
+                        savedImageUri = saveTemporaryImage(imageFilename, imageMimeType, imageBytes);
+                    } else if (isScopedStorageEnabled()) {
+                        savedImageUri = saveImagePostAndroidQ(imageFilename, imageMimeType, imageBytes);
+                    } else {
+                        savedImageUri = saveImagePreAndroidQ(imageFilename, imageMimeType, imageBytes);
+                    }
 
-										if (broadcastSave) {
-											// First, notify the system that a new image has been saved
-											// to external storage. This is important for user experience
-											// because it makes the image visible in the system gallery
-											// app.
-											StorageHelper.broadcastImageWasSaved(activity, mediaFile, targetFormat);
-										}
+                    if (notifyUser) {
+                        SnackbarHelper.showWithAction(activity, R.string.image_saved_successfully, R.string.action_snackbar_open_image, view -> {
+                            Intent intent = new Intent();
+                            intent.setAction(Intent.ACTION_VIEW);
+                            intent.setDataAndType(savedImageUri, "image/*");
+                            activity.startActivity(intent);
+                        });
+                    }
 
-										if (notifyUser) {
-											// Then, notify the user with an enhanced snackbar, allowing
-											// him (or her) to open the image in his favorite app.
-											Snackbar snackbar = SnackbarHelper.makeWithAction(activity, R.string.image_saved_successfully, R.string.action_snackbar_open_image, new View.OnClickListener() {
-												@Override
-												public void onClick(View v) {
-													Intent intent = new Intent();
-													intent.setAction(Intent.ACTION_VIEW);
-													intent.setDataAndType(Uri.parse("file://" + mediaFile.getAbsolutePath()), "image/*");
-													activity.startActivity(intent);
-												}
-											});
-											snackbar.show();
-										}
+                    notifyImageWasSaved(imageSavedCallback, savedImageUri, imageMimeType);
+                } catch (IOException e) {
+                    Timber.e(e, "Unable to save image to external storage");
+                    SnackbarHelper.makeError(activity, R.string.error_saving_image).show();
+                }
+            }
+        });
+    }
 
-										notifyImageWasSaved(imageSavedCallback, mediaFile, targetFormat);
-									} catch (IOException e) {
-										Timber.e(e, "Unable to save image to external storage");
-										SnackbarHelper.makeError(activity, R.string.error_saving_image).show();
-									}
-								} else {
-									Timber.w("WRITE_EXTERNAL_STORAGE denied, unable to save image");
-									SnackbarHelper.makeError(activity, R.string.error_saving_image_permission_denied).show();
-								}
-							}
-						});
-			}
-		});
-	}
+    @RequiresApi(api = Build.VERSION_CODES.Q)
+    private Uri saveImagePostAndroidQ(final String filename, final String mimeType, final byte[] rawData) throws IOException {
+        final ContentValues savedImageDetails = new ContentValues();
+        savedImageDetails.put(MediaStore.MediaColumns.DISPLAY_NAME, filename);
+        savedImageDetails.put(MediaStore.MediaColumns.MIME_TYPE, mimeType);
+        savedImageDetails.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES);
 
-	private void notifyImageWasSaved(final ImageSavedCallback imageSavedCallback, final File mediaFile, final Bitmap.CompressFormat targetFormat) {
-		if (imageSavedCallback != null) {
-			// We need to make sure to call the callback on the
-			// main thread.
-			Handler mainHandler = new Handler(activity.getMainLooper());
-			mainHandler.post(new Runnable() {
-				@Override
-				public void run() {
-					imageSavedCallback.onImageSaved(mediaFile, targetFormat);
-				}
-			});
-		}
-	}
+        ContentResolver contentResolver = activity.getApplicationContext().getContentResolver();
+        Uri imageCollection = MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY);
 
-	public void openImage() {
-		Timber.d("Opening '%s' in browser (or custom tab if supported)", imageUrl);
-		((BaseActivity) activity).openLink(imageUrl);
-	}
+        Uri imageUri = contentResolver.insert(imageCollection, savedImageDetails);
 
-	public void openExifData() {
-		Intent intent = new Intent(activity, ExifDetailsActivity.class);
-		intent.putExtra(UIConstants.ARG_EXIF_IMAGE, imageUrl);
-		activity.startActivity(intent, ActivityOptionsCompat.makeCustomAnimation(activity, R.anim.slide_up, R.anim.slide_down).toBundle());
-	}
+        try (final OutputStream outputStream = contentResolver.openOutputStream(imageUri)) {
+            outputStream.write(rawData);
+        }
 
-	public void shareImage() {
-		saveImage(false, false, true, true, new ImageSavedCallback() {
-			@Override
-			public void onImageSaved(File savedImage, Bitmap.CompressFormat format) {
-				Timber.d("Sharing image : '%s'", savedImage);
-				ShareCompat.IntentBuilder.from(activity)
-						.setText(activity.getText(R.string.action_share_image))
-						.setType(StorageHelper.getImageMimeType(format))
-						.setSubject(savedImage.getName())
-						.setStream(Uri.fromFile(savedImage))
-						.startChooser();
-			}
-		});
-	}
+        return imageUri;
+    }
+
+    private Uri saveImagePreAndroidQ(final String filename, final String mimeType, final byte[] rawData) throws IOException {
+        File mediaFile = StorageHelper.getMediaFile(filename);
+        StorageHelper.storeImageToFile(rawData, mediaFile);
+
+        // Notifies the system an image has been saved so it keeps gallery is up-to-date
+        StorageHelper.broadcastImageWasSaved(activity, mediaFile, mimeType);
+
+        return Uri.fromFile(mediaFile);
+    }
+
+    private Uri saveTemporaryImage(final String filename, final String mimeType, final byte[] rawData) throws IOException {
+        File temporaryImageFile = File.createTempFile(filename, null, activity.getCacheDir());
+        StorageHelper.storeImageToFile(rawData, temporaryImageFile);
+        return Uri.fromFile(temporaryImageFile);
+    }
+
+    private void notifyImageWasSaved(final ImageSavedCallback imageSavedCallback, final Uri savedImage, String savedImageMimeType) {
+        if (imageSavedCallback != null) {
+            Handler mainHandler = new Handler(activity.getMainLooper());
+            mainHandler.post(() -> imageSavedCallback.onImageSaved(savedImage, savedImageMimeType));
+        }
+    }
+
+    public void openImage() {
+        Timber.d("Opening '%s' in browser (or custom tab if supported)", imageUrl);
+        ((BaseActivity) activity).openLink(imageUrl);
+    }
+
+    public void openExifData() {
+        launchExifActivity();
+    }
+
+    private void launchExifActivity() {
+        Intent intent = new Intent(activity, ExifDetailsActivity.class);
+        intent.putExtra(UIConstants.ARG_EXIF_IMAGE, imageUrl);
+        activity.startActivity(intent, ActivityOptionsCompat.makeCustomAnimation(activity, R.anim.slide_up, R.anim.slide_down).toBundle());
+    }
+
+    public void shareImage() {
+        saveTemporaryImage((savedImage, mimeType) -> {
+            String imageFilename = StorageHelper.getFilenameFromUrl(imageUrl);
+            Timber.d("Sharing image : '%s'", savedImage);
+            ShareCompat.IntentBuilder.from(activity)
+                    .setText(activity.getText(R.string.action_share_image))
+                    .setType(mimeType)
+                    .setSubject(imageFilename)
+                    .setStream(savedImage)
+                    .startChooser();
+        });
+    }
 }

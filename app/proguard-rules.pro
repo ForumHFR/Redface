@@ -63,6 +63,9 @@
     @retrofit.http.* <methods>;
 }
 
+# Bouncycastle
+-dontwarn org.bouncycastle.**
+
 # OkHttp has some internal stuff not available on Android.
 -dontwarn okhttp3.internal.**
 
@@ -132,5 +135,7 @@
 }
 
 -keep class com.ayuget.redface.data.state.CategoriesStore { *; }
+-keep class com.ayuget.redface.image.superhost.** { *; }
 -keep class com.ayuget.redface.network.UserCookieStore { *; }
 -keep class com.ayuget.redface.network.SerializableHttpCookie { *; }
+-keep class com.ayuget.redface.image.diberie.DiberieHostResult { *; }

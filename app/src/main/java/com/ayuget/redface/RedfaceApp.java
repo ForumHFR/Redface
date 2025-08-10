@@ -17,10 +17,11 @@
 package com.ayuget.redface;
 
 import android.content.Context;
+import android.os.StrictMode;
 
-import androidx.annotation.NonNull;
 import androidx.multidex.MultiDex;
 import androidx.work.Configuration;
+import androidx.work.WorkManager;
 
 import com.ayuget.redface.settings.RedfaceSettings;
 
@@ -29,49 +30,55 @@ import dagger.android.support.DaggerApplication;
 import rx_activity_result.RxActivityResult;
 import timber.log.Timber;
 
-public class RedfaceApp extends DaggerApplication implements Configuration.Provider {
-    @Override
-    public void onCreate() {
-        super.onCreate();
+public class RedfaceApp extends DaggerApplication {
+	@Override
+	public void onCreate() {
+		super.onCreate();
 
-        // Setup logging
-        // Error logs are sent to the cloud with Crashlytics
-        if (BuildConfig.DEBUG) {
-            Timber.plant(new Timber.DebugTree());
-        }
+		// Setup logging
+		// Error logs are sent to the cloud with Crashlytics
+		if (BuildConfig.DEBUG) {
+			Timber.plant(new Timber.DebugTree());
+		}
 
-        RxActivityResult.register(this);
+		initWorkerFactory();
 
-        RedfaceNotifications.setupNotifications(this);
-    }
+		RxActivityResult.register(this);
 
-    public static RedfaceApp get(Context context) {
-        return (RedfaceApp) context.getApplicationContext();
-    }
+		RedfaceNotifications.setupNotifications(this);
 
-    public RedfaceSettings getSettings() {
-        return ((RedfaceComponent) applicationInjector()).redfaceSettings();
-    }
+		// fix for FileUriExposedException when sharing image
+		StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
+		StrictMode.setVmPolicy(builder.build());
+	}
 
-    @Override
-    protected AndroidInjector<? extends DaggerApplication> applicationInjector() {
-        return DaggerRedfaceComponent.factory()
-                .create(this);
-    }
+	private void initWorkerFactory() {
+		DaggerWorkerFactory workerFactory = ((RedfaceComponent) applicationInjector()).daggerWorkerFactory();
 
-    @Override
-    protected void attachBaseContext(Context base) {
-        super.attachBaseContext(base);
-        MultiDex.install(this);
-    }
+		Configuration workManagerConfig = new Configuration.Builder()
+				.setWorkerFactory(workerFactory)
+				.build();
 
-    @NonNull
-    @Override
-    public Configuration getWorkManagerConfiguration() {
-        DaggerWorkerFactory workerFactory = ((RedfaceComponent) applicationInjector()).daggerWorkerFactory();
+		WorkManager.initialize(this, workManagerConfig);
+	}
 
-        return new Configuration.Builder()
-                .setWorkerFactory(workerFactory)
-                .build();
-    }
+	public static RedfaceApp get(Context context) {
+		return (RedfaceApp) context.getApplicationContext();
+	}
+
+	public RedfaceSettings getSettings() {
+		return ((RedfaceComponent) applicationInjector()).redfaceSettings();
+	}
+
+	@Override
+	protected AndroidInjector<? extends DaggerApplication> applicationInjector() {
+		return DaggerRedfaceComponent.factory()
+				.create(this);
+	}
+
+	@Override
+	protected void attachBaseContext(Context base) {
+		super.attachBaseContext(base);
+		MultiDex.install(this);
+	}
 }
