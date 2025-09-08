@@ -20,6 +20,8 @@ import android.os.Bundle;
 import android.view.MenuItem;
 
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.ayuget.redface.R;
 import com.ayuget.redface.ui.event.NestedPreferenceSelectedEvent;
@@ -45,6 +47,12 @@ public class SettingsActivity extends BaseActivity {
 
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+
+        ViewCompat.setOnApplyWindowInsetsListener(toolbar, (v, insets) -> {
+            int statusBarHeight = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top;
+            v.setPadding(0, statusBarHeight, 0, 0);
+            return insets;
+        });
 
         if (savedInstanceState == null) {
             getFragmentManager().beginTransaction()
