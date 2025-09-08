@@ -6,7 +6,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.9.2'
+        classpath 'com.android.tools.build:gradle:8.13.0'
         classpath 'com.getkeepsafe.dexcount:dexcount-gradle-plugin:4.0.0'
     }
 }
@@ -23,12 +23,12 @@ apply plugin: 'com.google.gms.google-services'
 apply plugin: 'com.google.firebase.crashlytics'
 
 android {
-    compileSdk 34
+    compileSdk 36
 
     defaultConfig {
         applicationId "com.ayuget.redface"
         minSdkVersion 16
-        targetSdkVersion 34
+        targetSdkVersion 36
         multiDexEnabled true
         versionCode 5100
         versionName "5.1.0"
