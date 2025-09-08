@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
+<?xml version="1.0" encoding="utf-8"?><!--
   ~ Copyright 2015 Ayuget
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,8 +14,7 @@
   ~ limitations under the License.
   -->
 
-<menu
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
@@ -36,7 +34,7 @@
             <item
                 android:title="@string/action_topic_search_filter"
                 android:id="@+id/action_topic_search_filter"
-                android:checkable="true"/>
+                android:checkable="true" />
             <item
                 android:title="@string/action_topic_search_from_first_page"
                 android:id="@+id/action_topic_search_from_first_page"
@@ -90,5 +88,11 @@
         android:id="@+id/action_open_in_browser"
         android:title="@string/action_open_in_browser"
         android:orderInCategory="500"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_report_illegal_content"
+        android:title="@string/action_report_illegal_content"
+        android:orderInCategory="600"
         app:showAsAction="never" />
 </menu>
