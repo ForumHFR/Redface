@@ -105,11 +105,9 @@ public final class PostsTweaker {
             // can be cached to avoid unnecessary and expensive network requests.
             htmlContent = SMILEYS_REGEX.replaceAll(htmlContent, matchResult -> {
                 if (smileysEnabled) {
-                    // todo handle smileys caching
-                    String smileyUrl = matchResult.group(1);
-                    return matchResult.group();
+                    return Matcher.quoteReplacement(matchResult.group());
                 } else {
-                    return matchResult.group(2);
+                    return Matcher.quoteReplacement(matchResult.group(2));
                 }
             });
 
