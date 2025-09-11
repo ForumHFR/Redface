@@ -16,6 +16,8 @@
 
 package com.ayuget.redface.ui.fragment;
 
+import static android.content.DialogInterface.BUTTON_POSITIVE;
+
 import android.animation.ArgbEvaluator;
 import android.animation.ValueAnimator;
 import android.content.Intent;
@@ -93,8 +95,6 @@ import butterknife.BindView;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
 import timber.log.Timber;
-
-import static android.content.DialogInterface.BUTTON_POSITIVE;
 
 @FragmentWithArgs
 public class TopicFragment extends ToolbarFragment implements ViewPager.OnPageChangeListener, TopicPageView.OnQuoteListener {
@@ -734,6 +734,10 @@ public class TopicFragment extends ToolbarFragment implements ViewPager.OnPageCh
                 break;
             case R.id.action_open_in_browser:
                 startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(topicUrl)));
+                break;
+            case R.id.action_report_illegal_content:
+                String reportIllegalContentInfoPageUrl = "https://www.hardware.fr/html/donnees_personnelles/";
+                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(reportIllegalContentInfoPageUrl)));
                 break;
         }
 
