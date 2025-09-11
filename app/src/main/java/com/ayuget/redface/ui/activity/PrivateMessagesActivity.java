@@ -37,6 +37,7 @@ import com.ayuget.redface.ui.event.EditPostEvent;
 import com.ayuget.redface.ui.event.PostActionEvent;
 import com.ayuget.redface.ui.event.PrivateMessageContextItemSelectedEvent;
 import com.ayuget.redface.ui.event.QuotePostEvent;
+import com.ayuget.redface.ui.event.ViewUserProfileEvent;
 import com.ayuget.redface.ui.fragment.DetailsDefaultFragment;
 import com.ayuget.redface.ui.fragment.PrivateMessageListFragment;
 import com.ayuget.redface.ui.fragment.TopicFragment;
@@ -228,6 +229,15 @@ public class PrivateMessagesActivity extends MultiPaneActivity implements Privat
                 startEditActivity(event.getTopic(), event.getPostId(), messageBBCode);
             }
         }));
+    }
+
+    /**
+     * fixme: Code is duplicated with TopicsActivity because Otto doesn't support settings @Subscribe annotations
+     * on base classes (pull request #135 still not merged)
+     */
+    @Subscribe
+    public void onViewUserProfile(final ViewUserProfileEvent event) {
+        startViewUserProfileActivity(event.getUserId());
     }
 
     /**

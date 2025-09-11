@@ -101,15 +101,12 @@ public final class PostsTweaker {
                 post.setAvatarUrl("");
             }
 
+            // todo handle smileys caching
             // Handle smileys. Smileys can be disabled in the settings, and (if not disabled of course)
             // can be cached to avoid unnecessary and expensive network requests.
-            htmlContent = SMILEYS_REGEX.replaceAll(htmlContent, matchResult -> {
-                if (smileysEnabled) {
-                    return Matcher.quoteReplacement(matchResult.group());
-                } else {
-                    return Matcher.quoteReplacement(matchResult.group(2));
-                }
-            });
+            if (!smileysEnabled) {
+                htmlContent = SMILEYS_REGEX.replaceAll(htmlContent, matchResult -> matchResult.group(2));
+            }
 
             post.setHtmlContent(htmlContent);
         }
