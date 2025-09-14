@@ -23,12 +23,12 @@ apply plugin: 'com.google.gms.google-services'
 apply plugin: 'com.google.firebase.crashlytics'
 
 android {
-    compileSdk 36
+    compileSdk 35
 
     defaultConfig {
         applicationId "com.ayuget.redface"
         minSdkVersion 16
-        targetSdkVersion 36
+        targetSdkVersion 35
         multiDexEnabled true
         versionCode 5100
         versionName "5.1.0"
