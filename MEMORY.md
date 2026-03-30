@@ -100,4 +100,6 @@ develop has 14 commits not in master:
 
 Key diffs: master=SDK35/versionCode5101/edge-to-edge-optout, develop=SDK36/versionCode5100/no-edge-to-edge-workaround
 
-**Decision**: to work from develop, must first reconcile the 3 master-only commits. The SDK 35 revert on master suggests SDK 36 caused issues — investigate before rebasing.
+**Decision**: to work from develop, must first reconcile the 3 master-only commits. The SDK 36 revert on master suggests SDK 36 caused issues — investigate before rebasing.
+
+**Weird pattern**: master has cherry-picked fixes from develop (dollar signs, PM profiles) via a squash commit (23a60d0) but never merged back into develop. Then master reverted SDK 36 and bumped versionCode independently. This created a silent divergence — develop thinks it's ahead but is actually missing production fixes. The maintainer (Ayuget?) seems to work on develop, squash-merge to master for releases, then hotfix master directly without backporting. This workflow will cause merge conflicts if not reconciled.
