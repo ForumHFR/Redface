@@ -18,6 +18,11 @@ Read `MEMORY.md` at the start of each conversation to load timeline context.
 - Never force-push to master or develop
 - PR target: `develop` (not master) unless hotfix
 
+## GitHub interactions
+- Every issue, comment, or PR created by an AI agent **must** state who requested it
+- Format: "Commentaire/Issue/PR généré(e) par Claude (Opus 4.6) à la demande de @XaaT" (adapt the username to whoever is driving the session)
+- This applies to all ForumHFR repos, not just Redface
+
 ## Architecture
 - Dagger 2 DI, MVP-style fragments, RxJava 1.x
 - HTML templates for post rendering
