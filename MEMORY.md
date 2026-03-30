@@ -54,3 +54,50 @@ Timeline of research, decisions, and progress.
 - An okhttp3 migration branch exists (161-okhttp3-migration) — check if usable
 - A butterknife migration branch exists (develop_butterknife_migration) — check state
 - Test coverage is almost nonexistent
+
+### Branch audit
+- `develop` is ahead of master: bumps SDK 35→36, removes edge-to-edge workaround, 3 files changed
+- `161-okhttp3-migration` — 2016, dead
+- `develop_butterknife_migration` — 2019, dead
+- `dependencies-cleanup` — 2017, WIP abandoned
+- `caching-layer-enhancements` — 2017, dead
+- None of the old migration branches are recoverable
+
+### Open PRs (all stale)
+- #217 Fix super-h rehost permission denial (Oct 2021)
+- #216 Fix super-h vs proguard (Oct 2021)
+- #211 Super-H rehosting option (Jan 2021)
+- #209 Correction bug messages disparaissent (Sept 2019)
+
+### Open issues — 49 total
+Recent (2025-2026):
+- #240 Couleur barre de navigation (enhancement)
+- #239 Ouvrir image = 403 (bug)
+- #238 Appui long sur titre topic
+- #237 Telechargement images crash
+- #236 Scroll pages saute
+- #235 Voir messages de citations
+- #228 Fenetre redaction disparait
+- #227 Texte qui disparait (bug)
+- #225 Inutilisable sous HyperOS 2
+
+Old (2016-2019): ~40 issues, mostly untreated bugs and enhancements from 2016 era. Major cleanup needed.
+
+### develop vs master audit
+Branches have **diverged**:
+
+master has 3 commits not in develop (cherry-picks, never merged back):
+- e59f781 Bump versionCode 5100→5101 (Play Console requirement)
+- 16bb085 Revert to API 35 + opt-out edge-to-edge
+- 23a60d0 Fix dollar signs + PM profiles
+
+develop has 14 commits not in master:
+- SDK 36 bump (reverted on master)
+- WorkManager crash fix for Android 12
+- PendingIntent FLAG_IMMUTABLE fix
+- WebView response headers fix (pre-N)
+- Changelog updates
+
+Key diffs: master=SDK35/versionCode5101/edge-to-edge-optout, develop=SDK36/versionCode5100/no-edge-to-edge-workaround
+
+**Decision**: to work from develop, must first reconcile the 3 master-only commits. The SDK 35 revert on master suggests SDK 36 caused issues — investigate before rebasing.
