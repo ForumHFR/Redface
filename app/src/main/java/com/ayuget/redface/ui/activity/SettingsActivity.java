@@ -18,37 +18,36 @@ package com.ayuget.redface.ui.activity;
 
 import android.os.Bundle;
 import android.view.MenuItem;
+import android.view.View;
 
-import androidx.appcompat.widget.Toolbar;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.ayuget.redface.R;
+import com.ayuget.redface.databinding.ActivitySettingsBinding;
 import com.ayuget.redface.ui.event.NestedPreferenceSelectedEvent;
 import com.ayuget.redface.ui.event.ThemeChangedEvent;
 import com.ayuget.redface.ui.fragment.HomePreferenceFragment;
 import com.ayuget.redface.ui.fragment.NestedPreferenceFragmentBuilder;
 import com.squareup.otto.Subscribe;
 
-import butterknife.BindView;
 
 public class SettingsActivity extends BaseActivity {
     private static final String NESTED_FRAGMENT_TAG = "nested_fragment";
 
-    @BindView(R.id.toolbar_actionbar)
-    Toolbar toolbar;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_settings);
+        ActivitySettingsBinding binding = ActivitySettingsBinding.inflate(getLayoutInflater());
+        View view = binding.getRoot();
+        setContentView(view);
 
-        toolbar.setTitle(getResources().getString(R.string.settings_title));
+        binding.toolbar.toolbarActionbar.setTitle(getResources().getString(R.string.settings_title));
 
-        setSupportActionBar(toolbar);
+        setSupportActionBar(binding.toolbar.toolbarActionbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        ViewCompat.setOnApplyWindowInsetsListener(toolbar, (v, insets) -> {
+        ViewCompat.setOnApplyWindowInsetsListener(binding.toolbar.toolbarActionbar, (v, insets) -> {
             int statusBarHeight = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top;
             v.setPadding(0, statusBarHeight, 0, 0);
             return insets;

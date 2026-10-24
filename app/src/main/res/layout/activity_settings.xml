@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
+<?xml version="1.0" encoding="utf-8"?><!--
   ~ Copyright 2015 Ayuget
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,15 +14,16 @@
   ~ limitations under the License.
   -->
 
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?attr/appBackgroundColor">
+    android:background="?attr/appBackgroundColor"
+    android:orientation="vertical">
 
-    <include layout="@layout/toolbar_actionbar" />
+    <include
+        android:id="@+id/toolbar"
+        layout="@layout/toolbar_actionbar" />
 
     <FrameLayout
         android:id="@+id/container"
