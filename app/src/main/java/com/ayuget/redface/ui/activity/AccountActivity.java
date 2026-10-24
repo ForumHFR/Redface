@@ -19,8 +19,6 @@ package com.ayuget.redface.ui.activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.EditText;
-import android.widget.TextView;
 
 import com.ayuget.redface.R;
 import com.ayuget.redface.account.RedfaceAccountManager;
@@ -29,25 +27,17 @@ import com.ayuget.redface.data.api.hfr.HFRAuthenticator;
 import com.ayuget.redface.data.api.model.User;
 import com.ayuget.redface.data.rx.EndlessObserver;
 import com.ayuget.redface.data.rx.SubscriptionHandler;
+import com.ayuget.redface.databinding.ActivityAccountBinding;
 import com.ayuget.redface.network.HTTPClientProvider;
 import com.ayuget.redface.ui.UIConstants;
 import com.ayuget.redface.ui.misc.SnackbarHelper;
 
 import javax.inject.Inject;
 
-import butterknife.BindView;
-import butterknife.OnClick;
 import timber.log.Timber;
 
 public class AccountActivity extends BaseActivity {
-    @BindView(R.id.username)
-    EditText usernameTextView;
-
-    @BindView(R.id.password)
-    EditText passwordTextView;
-
-    @BindView(R.id.relogin_instructions)
-    TextView reloginInstructions;
+    private ActivityAccountBinding binding;
 
     @Inject
     HFRAuthenticator authenticator;
@@ -61,14 +51,17 @@ public class AccountActivity extends BaseActivity {
     @Inject
     HTTPClientProvider httpClientProvider;
 
-    private SubscriptionHandler<User, Boolean> loginSubscriptionHandler = new SubscriptionHandler<>();
+    private final SubscriptionHandler<User, Boolean> loginSubscriptionHandler = new SubscriptionHandler<>();
 
     private boolean isReloginMode;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_account);
+        binding = ActivityAccountBinding.inflate(getLayoutInflater());
+        View view = binding.getRoot();
+        setContentView(view);
+        binding.signInButton.setOnClickListener(v -> onLoginAttempt());
 
         if (getIntent() != null) {
             Timber.d("Got some intent data");
@@ -77,33 +70,32 @@ public class AccountActivity extends BaseActivity {
 
         if (isReloginMode) {
             Timber.d("Relogin mode");
-            reloginInstructions.setVisibility(View.VISIBLE);
+            binding.reloginInstructions.setVisibility(View.VISIBLE);
         }
         if (savedInstanceState != null) {
             savedInstanceState.clear();
         }
     }
 
-    @OnClick(R.id.sign_in_button)
     protected void onLoginAttempt() {
-        final String username = usernameTextView.getText().toString().trim();
+        final String username = binding.username.getText().toString().trim();
 
-        if (username.equals("")) {
-            usernameTextView.setError(getString(R.string.login_username_empty));
+        if (username.isEmpty()) {
+            binding.username.setError(getString(R.string.login_username_empty));
             return;
         } else {
-            usernameTextView.setError(null);
+            binding.username.setError(null);
         }
 
-        final String password = passwordTextView.getText().toString().trim();
-        if (password.equals("")) {
-            passwordTextView.setError(getString(R.string.login_password_empty));
+        final String pwd = binding.password.getText().toString().trim();
+        if (pwd.isEmpty()) {
+            binding.password.setError(getString(R.string.login_password_empty));
             return;
         }
 
         Timber.d("Login attempt for user '%s'", username);
 
-        final User user = new User(username, password);
+        final User user = new User(username, pwd);
 
         // Clearing cookies is necessary because cookies are cached in persistent storage
         // and not overwritter at every request (for obvious performance reasons).
@@ -111,7 +103,7 @@ public class AccountActivity extends BaseActivity {
         // again.
         httpClientProvider.clearUserCookies(user);
 
-        subscribe(loginSubscriptionHandler.load(user, authenticator.login(user), new EndlessObserver<Boolean>() {
+        subscribe(loginSubscriptionHandler.load(user, authenticator.login(user), new EndlessObserver<>() {
             @Override
             public void onNext(Boolean loginWorked) {
 
@@ -144,10 +136,6 @@ public class AccountActivity extends BaseActivity {
                 Timber.e(throwable, "Unknown error while logging");
             }
         }));
-    }
-
-    private void cleanUserCookies(User user) {
-
     }
 
 

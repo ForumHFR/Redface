@@ -21,6 +21,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.view.View;
 import android.widget.LinearLayout;
 
 import androidx.annotation.DrawableRes;
@@ -29,6 +30,7 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.exifinterface.media.ExifInterface;
 
 import com.ayuget.redface.R;
+import com.ayuget.redface.databinding.ActivityExifDetailsBinding;
 import com.ayuget.redface.storage.StorageHelper;
 import com.ayuget.redface.ui.UIConstants;
 import com.ayuget.redface.ui.misc.ImageMenuHandler;
@@ -49,20 +51,18 @@ import static com.ayuget.redface.util.ImageUtils.isScopedStorageEnabled;
 public class ExifDetailsActivity extends BaseActivity {
 	public static final String FIELD_SEPARATOR = "  ·  ";
 
-	@BindView(R.id.toolbar_actionbar)
-	Toolbar toolbar;
-
-	@BindView(R.id.image_attributes)
-	LinearLayout imageAttributes;
+	private ActivityExifDetailsBinding binding;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_exif_details);
+		binding = ActivityExifDetailsBinding.inflate(getLayoutInflater());
+		View view = binding.getRoot();
+		setContentView(view);
 
-		toolbar.setTitle(R.string.exif_data_title);
-		toolbar.setNavigationIcon(R.drawable.ic_close_white_24dp);
-		toolbar.setNavigationOnClickListener(v -> finish());
+		binding.toolbar.toolbarActionbar.setTitle(R.string.exif_data_title);
+		binding.toolbar.toolbarActionbar.setNavigationIcon(R.drawable.ic_close_white_24dp);
+		binding.toolbar.toolbarActionbar.setNavigationOnClickListener(v -> finish());
 
 		Intent intent = getIntent();
 		if (intent == null) {
@@ -116,7 +116,7 @@ public class ExifDetailsActivity extends BaseActivity {
 					.withIcon(icon)
 					.build();
 
-			imageAttributes.addView(detailView);
+			binding.imageAttributes.addView(detailView);
 		} else {
 			Timber.d("Missing information : mainText = %s, secondaryText = %s", mainText, secondaryText);
 		}
